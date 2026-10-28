@@ -59,6 +59,8 @@ button.sec.del{color:var(--chi)}
 .item .m{flex:1;min-width:0}
 .item .t{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .item .a{font-weight:700;white-space:nowrap}
+.item .go{color:var(--mut);font-size:22px;padding-left:2px}
+.item.tap{cursor:pointer}
 .item .a.Thu{color:var(--thu)}.item .a.Chi{color:var(--chi)}
 .photo{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
 .photo .chip{cursor:pointer}
@@ -291,7 +293,7 @@ nav#nav button.on{background:var(--bg);color:var(--pri);font-weight:600}
         <div class="photo"><label class="chip" for="fAnh3">📷 Đính kèm ảnh</label><input type="file" id="fAnh3" accept="image/*" hidden><span class="mut" id="anhTen3"></span><button type="button" class="x" id="anhBo3" hidden>✕</button></div>
         <button class="main" id="nmLuu">Thêm khoản vay</button>
       </details>
-      <div class="mut" style="margin-top:12px">Lịch sử trả / thu nợ gần đây</div>
+      <div hidden>
       <div id="tnList"></div>
       <details id="tn" style="margin-top:12px">
         <summary>Ghi trả nợ / thu nợ</summary>
@@ -301,9 +303,9 @@ nav#nav button.on{background:var(--bg);color:var(--pri);font-weight:600}
           <input id="noTien" type="number" inputmode="decimal" placeholder="Số tiền">
           <select id="noVi"></select>
         </div>
-        <div class="photo"><label class="chip" for="fAnh2">📷 Đính kèm ảnh</label><input type="file" id="fAnh2" accept="image/*" hidden><span class="mut" id="anhTen2"></span><button type="button" class="x" id="anhBo2" hidden>✕</button></div>
         <button class="main" id="noLuu">Ghi lại</button>
       </details>
+      </div>
     </details>
   </div>
   <div class="card pn" id="p_dmBox" hidden>
@@ -434,6 +436,21 @@ nav#nav button.on{background:var(--bg);color:var(--pri);font-weight:600}
   <div class="grid2" style="margin-top:12px"><button class="sec" id="eHuy">Hủy</button><button class="sec pri" id="eLuu">Lưu thay đổi</button></div>
   <button class="sec" id="eNhan" style="width:100%;margin-top:8px">⧉ Nhân đôi (ghi lại hôm nay)</button>
   <button class="sec del" id="eXoa" style="width:100%;margin-top:8px">Xóa giao dịch này</button>
+</div></div>
+<div class="sheet" id="cnSheet"><div class="box">
+  <div class="hd"><span id="cnT"></span><button type="button" class="x" id="cnDong" aria-label="Đóng">✕</button></div>
+  <div id="cnInfo"></div>
+  <div id="cnAct" style="margin-top:14px">
+    <div class="lbl" id="cnActLbl" style="margin-top:0"></div>
+    <div class="grid2"><input id="cnTien" type="number" inputmode="decimal" placeholder="Số tiền"><select id="cnVi"></select></div>
+    <div class="chips"><button type="button" class="chip" id="cnHet">Hết số còn lại</button></div>
+    <div id="cnHint" class="mut" style="margin:6px 2px 0"></div>
+    <div class="photo"><label class="chip" for="fAnh2">📷 Đính kèm ảnh</label><input type="file" id="fAnh2" accept="image/*" hidden><span class="mut" id="anhTen2"></span><button type="button" class="x" id="anhBo2" hidden>✕</button></div>
+    <button class="main" id="cnLuu" style="margin-top:10px"></button>
+  </div>
+  <div class="lbl">Lịch sử</div>
+  <div id="cnLs"></div>
+  <button class="sec del" id="cnXoa" style="width:100%;margin-top:10px">Xóa khoản nợ này</button>
 </div></div>
 <div id="modal"><img id="modalImg" alt=""><button type="button" class="x" id="modalDong" aria-label="Đóng">✕</button></div>
 <div class="toast" id="toast"></div>
@@ -848,23 +865,15 @@ function drawNo(d){
   $("noTong").textContent=act.length?("Họ nợ tôi: "+vnd(hn)+" · Tôi nợ: "+vnd(tn)+" · Ròng: "+(hn-tn>=0?"+":"−")+vnd(Math.abs(hn-tn))):"";
   if(!all.length){el.innerHTML='<div class="mut">Chưa có khoản nợ nào.</div>'}
   all.forEach(function(x){
-    var r=document.createElement("div");r.className="item"+(x.con>0?"":" dim");
+    var r=document.createElement("div");r.className="item tap"+(x.con>0?"":" dim");
     var m=document.createElement("div");m.className="m";
     var t=document.createElement("div");t.className="t";t.textContent=x.ten+(x.con>0?"":" (đã xong)");
     var s=document.createElement("div");s.className="mut";
-    s.textContent=x.loai+(x.ngay?" · vay "+x.ngay:"")+(x.han?" · hạn "+x.han:"")+" · gốc "+vnd(x.goc)+(x.ghiChu?" · "+x.ghiChu:"");
-    if(x.anh){s.appendChild(document.createTextNode("  "));s.appendChild(picBtn(x.anh))}
+    s.textContent=x.loai+(x.ngay?" · vay "+x.ngay:"")+(x.han?" · hạn "+x.han:"")+" · gốc "+vnd(x.goc);
     m.appendChild(t);m.appendChild(s);
     var a=document.createElement("div");a.className="a "+(x.loai==="Họ nợ tôi"?"Thu":"Chi");a.textContent=vnd(x.con);
-    r.appendChild(m);r.appendChild(a);
-    if(x.goc-x.con<=0.5){
-      var b=mk("button","x","✕");b.setAttribute("aria-label","Xóa khoản nợ");
-      b.onclick=function(){
-        if(!confirm("Xóa khoản nợ \""+x.ten+"\" (chưa có lần trả nào)?"))return;
-        run("xoaKhoanNo",[x.dong],function(d2){render(d2);toast("Đã xóa")},function(e){toast(e.message||"Không xóa được")});
-      };
-      r.appendChild(b);
-    }
+    r.appendChild(m);r.appendChild(a);r.appendChild(mk("span","go","›"));
+    r.onclick=function(){moNo(x.ten)};
     el.appendChild(r);
   });
   fillSel($("nmVi"),d.dsVi,"Không chọn ví");
@@ -1503,6 +1512,78 @@ $("xuChep").onclick=function(){
   function du(){var t=document.createElement("textarea");t.value=CSV.csv;t.style.cssText="position:fixed;opacity:0";document.body.appendChild(t);t.select();var ok=false;try{ok=document.execCommand("copy")}catch(e){}document.body.removeChild(t);toast(ok?"Đã sao chép ✓":"Không sao chép được")}
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(CSV.csv).then(function(){toast("Đã sao chép ✓")},du)}else du();
 };
+
+// ===== Chi tiết khoản nợ: nhận / trả tiền và lịch sử =====
+var noCur="";
+function dongCn(){$("cnSheet").classList.remove("show");noCur=""}
+function moNo(ten){
+  var x=((D&&D.no)||[]).filter(function(n){return n.ten===ten})[0];
+  if(!x)return;
+  noCur=ten;
+  var thu=x.loai==="Họ nợ tôi";
+  $("cnT").textContent=x.ten;
+  var da=Math.max(0,x.goc-x.con);
+  var inf=$("cnInfo");inf.innerHTML="";
+  function dong(k,v,cls){var r=mk("div","row2");r.style.marginTop="6px";r.appendChild(mk("span","mut",k));var b=mk("b",cls||"",v);r.appendChild(b);inf.appendChild(r)}
+  dong("Loại",x.loai);
+  dong("Gốc",vnd(x.goc)+" đ");
+  dong(thu?"Đã nhận":"Đã trả",vnd(da)+" đ");
+  dong("Còn lại",vnd(x.con)+" đ",thu?"thu":"chi");
+  if(x.ngay)dong("Ngày vay",x.ngay);
+  if(x.han)dong("Hạn",x.han);
+  if(x.ghiChu){var g=mk("div","mut","Ghi chú: "+x.ghiChu);g.style.marginTop="8px";inf.appendChild(g)}
+  if(x.anh){var p=mk("div");p.style.marginTop="6px";p.appendChild(picBtn(x.anh));inf.appendChild(p)}
+  var open=x.con>0.5;
+  $("cnAct").hidden=!open;
+  if(open){
+    $("cnActLbl").textContent=thu?"Nhận tiền từ "+x.ten:"Trả tiền cho "+x.ten;
+    $("cnLuu").textContent=thu?"Nhận":"Trả";
+    $("cnHint").textContent=thu?"Tiền nhận sẽ CỘNG vào ví bạn chọn.":"Tiền trả sẽ TRỪ khỏi ví bạn chọn.";
+    var sv=$("cnVi"),cur=sv.value;sv.innerHTML="";
+    (D.dsVi||[]).forEach(function(w){var o=mk("option","",w);o.value=w;sv.appendChild(o)});
+    if(cur&&(D.dsVi||[]).indexOf(cur)>=0)sv.value=cur;
+    $("cnTien").value="";
+    $("cnHet").onclick=function(){$("cnTien").value=Math.round(x.con*100)/100};
+    $("cnLuu").onclick=function(){
+      var b=$("cnLuu");b.disabled=true;
+      run("traNo",[ten,$("cnTien").value,$("cnVi").value,anh2],function(d){
+        b.disabled=false;render(d);xoaAnh("fAnh2","anhTen2","anhBo2",function(v){anh2=v});
+        toast(thu?"Đã ghi nhận ✓":"Đã ghi trả ✓");moNo(ten);
+      },function(e){b.disabled=false;toast(e.message||"Không ghi được")});
+    };
+  }
+  var xb=$("cnXoa");
+  xb.hidden=da>0.5;
+  xb.onclick=function(){
+    if(!confirm("Xóa khoản nợ \""+x.ten+"\" (chưa có lần trả nào)?"))return;
+    run("xoaKhoanNo",[x.dong],function(d2){render(d2);dongCn();toast("Đã xóa")},function(e){toast(e.message||"Không xóa được")});
+  };
+  var ls=$("cnLs");ls.innerHTML='<div class="mut">Đang tải…</div>';
+  $("cnSheet").classList.add("show");
+  run("chiTietNo",[ten],function(r){
+    if(noCur!==ten)return;
+    var arr=(typeof r==="string"?JSON.parse(r):r).ls||[];
+    ls.innerHTML="";
+    if(!arr.length){ls.appendChild(mk("div","mut","Chưa có lần "+(thu?"nhận":"trả")+" nào."));return}
+    arr.forEach(function(h){
+      var row=mk("div","item");
+      var m=mk("div","m");
+      m.appendChild(mk("div","t",h.ngay));
+      var s=mk("div","mut",h.vi||"");
+      if(h.anh){s.appendChild(document.createTextNode("  "));s.appendChild(picBtn(h.anh))}
+      m.appendChild(s);
+      var a=mk("div","a "+(thu?"Thu":"Chi"),(thu?"+":"−")+vnd(h.tien));
+      var del=mk("button","x","✕");del.setAttribute("aria-label","Xóa");
+      del.onclick=function(){
+        if(!confirm("Xóa lần "+(thu?"nhận ":"trả ")+vnd(h.tien)+" ngày "+h.ngay+"? Số dư ví sẽ được tính lại."))return;
+        run("xoaTraNo",[h.dong],function(d2){render(d2);toast("Đã xóa");moNo(ten)},function(e){toast(e.message||"Không xóa được")});
+      };
+      row.appendChild(m);row.appendChild(a);row.appendChild(del);ls.appendChild(row);
+    });
+  },function(e){ls.innerHTML="";ls.appendChild(mk("div","mut","Không tải được lịch sử."))});
+}
+$("cnDong").onclick=dongCn;
+$("cnSheet").onclick=function(e){if(e.target===this)dongCn()};
 </script>
 </body>
 </html>
